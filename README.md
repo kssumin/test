@@ -24,7 +24,19 @@
 * 
 
 ### 요구사항 4 - redirect 방식으로 이동
-* 
+#### Request
+```markdown
+Client request:
+
+GET /index.html HTTP/1.1
+Host: www.example.com
+```
+
+#### Response
+```markdown
+HTTP/1.1 302 Found
+Location: http://www.iana.org/domains/example/
+```
 
 ### 요구사항 5 - cookie
 * 
