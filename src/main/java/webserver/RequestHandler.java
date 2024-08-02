@@ -15,6 +15,7 @@ import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequestUtils;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -31,31 +32,34 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             String line = reader.readLine();
+            int contentLength=0;
+
+            if (line==null){
+                return;
+            }
 
             log.debug("request line : {}", line);
 
             String[] tokens = line.split(" ");
             String requestUrl = tokens[1];
 
-            if (line==null){
-                return;
-            }
-
             while(!line.equals("")){
                 line = reader.readLine();
+
+                if (line.startsWith("Content-Length")){
+                    int index = line.indexOf(":");
+                    contentLength = Integer.parseInt(line.substring(index + 1).trim());
+                }
                 log.debug("header : {}", line);
             }
 
             if (requestUrl.startsWith("/user/create")){
-                int index = requestUrl.indexOf("?");
-                String requestPath = requestUrl.substring(0, index);
-                String params = requestUrl.substring(index+1);
-
-                Map<String, String> query = HttpRequestUtils.parseQueryString(params);
+                String requestBody = IOUtils.readData(reader, contentLength);
+                Map<String, String> query = HttpRequestUtils.parseQueryString(requestBody);
             User user = new User(query.get("userId"), query.get("password"), query.get("name"),
                     query.get("email"));
-            log.debug("requestPath : {}", requestPath);
-            log.debug("params : {}", params);
+
+            log.debug("body : {}", requestBody);
             log.debug("user : {}", user);
             }else{
                 DataOutputStream dos = new DataOutputStream(out);
