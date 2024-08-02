@@ -47,8 +47,7 @@ public class RequestHandler extends Thread {
                 line = reader.readLine();
 
                 if (line.startsWith("Content-Length")){
-                    int index = line.indexOf(":");
-                    contentLength = Integer.parseInt(line.substring(index + 1).trim());
+                    contentLength = getContentLength(line);
                 }
                 log.debug("header : {}", line);
             }
@@ -91,5 +90,10 @@ public class RequestHandler extends Thread {
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private int getContentLength(String line){
+        int index = line.indexOf(":");
+        return Integer.parseInt(line.substring(index + 1).trim());
     }
 }
