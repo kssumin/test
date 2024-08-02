@@ -38,6 +38,16 @@ HTTP/1.1 302 Found
 Location: http://www.iana.org/domains/example/
 ```
 
+클라이언트는 response line의 상태 코드를 확인한 후 302라면 Location값을 읽어 서버에 재요청을 보낸다.
+
+
+#### 회원가입 처리 이후에 index.html을 보내주는 방식은?
+브라우저에서 새로고침을 하면 회원가입 요청 처리부터 다시 진행한다.
+
+데이터 중복의 문제가 있다.
+
+따라서 두 개의 api를 분리하여 회원가입 완료 이후 index.html을 요청하도록 클라이언트에게 유도한다(리다이렉트)
+
 ### 요구사항 5 - cookie
 * 
 
