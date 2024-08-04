@@ -69,21 +69,8 @@ public class RequestHandler extends Thread {
             if (requestUrl.startsWith("/user/login")){
                 Map<String, String> body = getRequestBody(reader, contentLength);
 
-                String userId = body.get("userId");
-                User user = DataBase.findUserById(userId);
-
-                if (user == null){
-                    log.info("user not found");
-                    responseResource(out, "/user/login_failed.html");
-                    return;
-                }
-
-                if(validatePassword(user.getPassword(), body.get("password"))){
-                    log.info("success login");
-                    responseSuccessLoginHeader(dos);
-                    return;
-                }
-                responseResource(out, "/user/login_failed.html");
+                validateUser(body.get("userId"), body.get("password"), dos);
+                responseSuccessLoginHeader(dos);
             }
             else{
                 byte[] body = Files.readAllBytes(new File("./webapp"+requestUrl).toPath());
@@ -155,7 +142,23 @@ public class RequestHandler extends Thread {
         responseBody(dos, body);
     }
 
-    private boolean validatePassword(String answer, String compare){
+    private void validateUser(String compareUserId, String comparePassword, DataOutputStream out) throws IOException {
+        User user = DataBase.findUserById(compareUserId);
+
+        if (user == null){
+            log.info("user not found");
+            responseResource(out, "/user/login_failed.html");
+            return;
+        }
+
+        if(isSame(user.getPassword(), comparePassword)){
+            return;
+        }
+
+        responseResource(out, "/user/login_failed.html");
+    }
+
+    private boolean isSame(String answer, String compare){
        return answer.equals(compare);
     }
 }
