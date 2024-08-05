@@ -59,6 +59,14 @@ public class RequestHandler extends Thread {
                 }
                 log.debug("header : {}", line);
             }
+            if (requestUrl.endsWith(".css")){
+                byte[] body = Files.readAllBytes(new File("./webapp" + requestUrl).toPath());
+                new HttpResponseBuilder(dos)
+                        .status(200)
+                        .header("Content-Type", "text/css")
+                        .body(body)
+                        .build();
+            }
 
             if (requestUrl.startsWith("/user/create")){
                 Map<String, String> body = getRequestBody(reader, contentLength);

@@ -52,7 +52,9 @@ Location: http://www.iana.org/domains/example/
 * 
 
 ### 요구사항 6 - stylesheet 적용
-* 
+* 브라우저는 Content-Type 응답 헤더 값을 통해 응답 본문에 포함되어 있는 컨텐츠가 어떤 유형인지 확인한다.
+
+즉, CSS 요청에 대해서는 Content-Type : text/css여야 브라우저가 이를 css로 인식할 수 있다.
 
 ### heroku 서버에 배포 후
 * 
