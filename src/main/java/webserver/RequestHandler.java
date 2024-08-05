@@ -36,6 +36,7 @@ public class RequestHandler extends Thread {
 
             String line = reader.readLine();
             int contentLength=0;
+            boolean isLogin = false;
 
             if (line==null){
                 return;
@@ -52,6 +53,10 @@ public class RequestHandler extends Thread {
                 if (line.startsWith("Content-Length")){
                     contentLength = getContentLength(line);
                 }
+
+                if(line.startsWith("Cookie")){
+                    isLogin = isLogin(line);
+                }
                 log.debug("header : {}", line);
             }
 
@@ -64,7 +69,7 @@ public class RequestHandler extends Thread {
             log.debug("user : {}", user);
 
             new HttpResponseBuilder(dos)
-                        .status(302, "Found")
+                        .status(302)
                         .header("Location", "/index.html")
                         .build();
             }
@@ -75,16 +80,35 @@ public class RequestHandler extends Thread {
                 validateUser(body.get("userId"), body.get("password"), dos);
 
                 new HttpResponseBuilder(dos)
-                        .status(302, "Found")
+                        .status(302)
                         .header("Location", "/index.html")
                         .header("Set-Cookie", "logined=true")
                         .build();
+            }
+
+            if (requestUrl.startsWith("/user/list")){
+                if (isLogin){
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("<table border='1>");
+                    DataBase.findAll()
+                            .forEach(user -> sb.append("<tr><td>"+user.getUserId()+"</td><td>"+user.getName()+"</td><td>"+user.getEmail()+"</td></tr>"));
+
+                    sb.append("</table>");
+
+                    new HttpResponseBuilder(dos)
+                            .status(200)
+                            .body(sb.toString().getBytes())
+                            .build();
+
+                    return;
+                }
+                responseResource(out, "/login.html");
             }
             else{
                 byte[] body = Files.readAllBytes(new File("./webapp"+requestUrl).toPath());
 
                 new HttpResponseBuilder(dos)
-                        .status(200, "200 OK")
+                        .status(200)
                         .header("Content-Type", "text/html;charset=UTF-8")
                         .header("Content-Length", String.valueOf(body.length))
                         .body(body)
@@ -110,7 +134,7 @@ public class RequestHandler extends Thread {
         byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
 
         new HttpResponseBuilder(dos)
-                .status(200, "200 OK")
+                .status(200)
                 .header("Content-Type", "text/html;charset=UTF-8")
                 .header("Content-Length", String.valueOf(body.length))
                 .body(body)
@@ -135,5 +159,12 @@ public class RequestHandler extends Thread {
 
     private boolean isSame(String answer, String compare){
        return answer.equals(compare);
+    }
+
+    private boolean isLogin(String line){
+        Map<String, String> cookies = HttpRequestUtils.parseCookies(line.split(":")[1].trim());
+        String value = cookies.get("logined");
+
+        return value != null;
     }
 }
