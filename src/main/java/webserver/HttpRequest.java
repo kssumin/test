@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -49,8 +48,8 @@ public class HttpRequest {
         String[] tokens = line.split(" ");
         method = tokens[0];
 
+        String source = tokens[1];
         if (method.equals("GET")){
-            String source = tokens[1];
             int index = source.indexOf("?");
 
             if (index == -1){
@@ -60,7 +59,9 @@ public class HttpRequest {
 
             path = source.substring(0, index);
             params = HttpRequestUtils.parseQueryString(source.substring(index+1));
+            return;
         }
+        path = source;
     }
 
     private void setHeader(String line){
@@ -75,7 +76,7 @@ public class HttpRequest {
     private void setRequestBody(BufferedReader reader) throws IOException {
         int contentLength = Integer.parseInt(headers.get("Content-Length"));
         String requestBody = IOUtils.readData(reader, contentLength);
-        params = HttpRequestUtils.parseQueryString(requestBody);
+        params.putAll(HttpRequestUtils.parseQueryString(requestBody));
     }
 
     public String getMethod() {
