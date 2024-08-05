@@ -19,9 +19,10 @@ public class HttpResponseBuilder {
         this.headers = new HashMap<>();
     }
 
-    public HttpResponseBuilder status(int code, String message) {
+    public HttpResponseBuilder status(int code) {
+        HttpStatus httpStatus = HttpStatus.find(code);
         this.statusCode = code;
-        this.statusMessage = message;
+        this.statusMessage = httpStatus.getStatusMessage();
         return this;
     }
 
