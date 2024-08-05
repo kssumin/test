@@ -11,8 +11,8 @@ public class HttpResponseBuilder {
     private byte[] body;
 
     private int bodyLength;
-    private int statusCode;
-    private String statusMessage;
+    private int statusCode = 200;
+    private String statusMessage = HttpStatus.OK.getStatusMessage();
 
     public HttpResponseBuilder(DataOutputStream dos) {
         this.dos = dos;
