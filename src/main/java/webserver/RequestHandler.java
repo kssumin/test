@@ -32,108 +32,73 @@ public class RequestHandler extends Thread {
                 connection.getPort());
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             HttpRequest request = new HttpRequest(in);
+            HttpResponse response = new HttpResponse(out);
             DataOutputStream dos = new DataOutputStream(out);
 
             boolean isLogin = isLogin(request);
             String requestUrl = request.getPath();
 
-            if (requestUrl.endsWith(".css")){
-                byte[] body = Files.readAllBytes(new File("./webapp" + requestUrl).toPath());
-                new HttpResponseBuilder(dos)
-                        .status(200)
-                        .header("Content-Type", "text/css")
-                        .body(body)
-                        .build();
+            if (requestUrl.endsWith(".css")) {
+                response.forwardCss(requestUrl);
             }
 
-            if (requestUrl.startsWith("/user/create")){
-            User user = new User(
-                    request.getParameter("userId"),
-                    request.getParameter("password"),
-                    request.getParameter("name"),
-                    request.getParameter("email"));
-            DataBase.addUser(user);
+            if (requestUrl.startsWith("/user/create")) {
+                User user = new User(
+                        request.getParameter("userId"),
+                        request.getParameter("password"),
+                        request.getParameter("name"),
+                        request.getParameter("email"));
+                DataBase.addUser(user);
 
-            log.debug("user : {}", user);
+                log.debug("user : {}", user);
 
-            new HttpResponseBuilder(dos)
-                        .status(302)
-                        .header("Location", "/index.html")
-                        .build();
+                response.sendRedirect("/index.html");
             }
 
-            if (requestUrl.startsWith("/user/login")){
+            if (requestUrl.startsWith("/user/login")) {
                 validateUser(
                         request.getParameter("userId"),
                         request.getParameter("password"),
-                        dos);
+                        response);
 
-                new HttpResponseBuilder(dos)
-                        .status(302)
-                        .header("Location", "/index.html")
-                        .header("Set-Cookie", "logined=true")
-                        .build();
+                response.sendRedirect("/index.html");
             }
 
-            if (requestUrl.startsWith("/user/list")){
-                if (isLogin){
+            if (requestUrl.startsWith("/user/list")) {
+                if (isLogin) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("<table border='1>");
                     DataBase.findAll()
-                            .forEach(user -> sb.append("<tr><td>"+user.getUserId()+"</td><td>"+user.getName()+"</td><td>"+user.getEmail()+"</td></tr>"));
+                            .forEach(user -> sb.append(
+                                    "<tr><td>" + user.getUserId() + "</td><td>" + user.getName() + "</td><td>"
+                                            + user.getEmail() + "</td></tr>"));
 
                     sb.append("</table>");
 
-                    new HttpResponseBuilder(dos)
-                            .status(200)
-                            .body(sb.toString().getBytes())
-                            .build();
-
+                    response.forwardBody(sb.toString().getBytes());
                     return;
                 }
-                responseResource(out, "/login.html");
-            }
-            else{
-                byte[] body = Files.readAllBytes(new File("./webapp"+requestUrl).toPath());
-
-                new HttpResponseBuilder(dos)
-                        .status(200)
-                        .header("Content-Type", "text/html;charset=UTF-8")
-                        .header("Content-Length", String.valueOf(body.length))
-                        .body(body)
-                        .build();
+                response.forward("/login.html");
+            } else {
+                response.forward(requestUrl);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
     }
 
-    private void responseResource(OutputStream out, String url) throws IOException {
-        DataOutputStream dos = new DataOutputStream(out);
-        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-
-        new HttpResponseBuilder(dos)
-                .status(200)
-                .header("Content-Type", "text/html;charset=UTF-8")
-                .header("Content-Length", String.valueOf(body.length))
-                .body(body)
-                .build();
-    }
-
-    private void validateUser(String compareUserId, String comparePassword, DataOutputStream out) throws IOException {
+    private void validateUser(String compareUserId, String comparePassword, HttpResponse response) throws IOException {
         User user = DataBase.findUserById(compareUserId);
 
         if (user == null){
             log.info("user not found");
-            responseResource(out, "/user/login_failed.html");
+            response.forward("/user/login_failed.html");
             return;
         }
-
         if(isSame(user.getPassword(), comparePassword)){
             return;
         }
-
-        responseResource(out, "/user/login_failed.html");
+        response.forward("/user/login_failed.html");
     }
 
     private boolean isSame(String answer, String compare){
