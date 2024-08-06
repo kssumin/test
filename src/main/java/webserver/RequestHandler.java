@@ -35,50 +35,19 @@ public class RequestHandler extends Thread {
             HttpResponse response = new HttpResponse(out);
             DataOutputStream dos = new DataOutputStream(out);
 
-            boolean isLogin = isLogin(request);
             String requestUrl = request.getPath();
 
             if (requestUrl.endsWith(".css")) {
                 response.forwardCss(requestUrl);
             }
-
             if (requestUrl.startsWith("/user/create")) {
-                User user = new User(
-                        request.getParameter("userId"),
-                        request.getParameter("password"),
-                        request.getParameter("name"),
-                        request.getParameter("email"));
-                DataBase.addUser(user);
-
-                log.debug("user : {}", user);
-
-                response.sendRedirect("/index.html");
+                createUser(request, response);
             }
-
             if (requestUrl.startsWith("/user/login")) {
-                validateUser(
-                        request.getParameter("userId"),
-                        request.getParameter("password"),
-                        response);
-
-                response.sendRedirect("/index.html");
+                login(request, response);
             }
-
             if (requestUrl.startsWith("/user/list")) {
-                if (isLogin) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("<table border='1>");
-                    DataBase.findAll()
-                            .forEach(user -> sb.append(
-                                    "<tr><td>" + user.getUserId() + "</td><td>" + user.getName() + "</td><td>"
-                                            + user.getEmail() + "</td></tr>"));
-
-                    sb.append("</table>");
-
-                    response.forwardBody(sb.toString().getBytes());
-                    return;
-                }
-                response.forward("/login.html");
+                userList(request, response);
             } else {
                 response.forward(requestUrl);
             }
@@ -87,7 +56,46 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void validateUser(String compareUserId, String comparePassword, HttpResponse response) throws IOException {
+    private void createUser(HttpRequest request, HttpResponse response){
+        User user = new User(
+                request.getParameter("userId"),
+                request.getParameter("password"),
+                request.getParameter("name"),
+                request.getParameter("email"));
+        DataBase.addUser(user);
+
+        log.debug("user : {}", user);
+
+        response.sendRedirect("/index.html");
+    }
+
+    private void login(HttpRequest request, HttpResponse response){
+        validateUser(
+                request.getParameter("userId"),
+                request.getParameter("password"),
+                response);
+
+        response.sendRedirect("/index.html");
+    }
+
+    private void userList(HttpRequest request, HttpResponse response){
+        if (isLogin(request)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("<table border='1>");
+            DataBase.findAll()
+                    .forEach(user -> sb.append(
+                            "<tr><td>" + user.getUserId() + "</td><td>" + user.getName() + "</td><td>"
+                                    + user.getEmail() + "</td></tr>"));
+
+            sb.append("</table>");
+
+            response.forwardBody(sb.toString().getBytes());
+            return;
+        }
+        response.forward("/login.html");
+    }
+
+    private void validateUser(String compareUserId, String comparePassword, HttpResponse response){
         User user = DataBase.findUserById(compareUserId);
 
         if (user == null){
