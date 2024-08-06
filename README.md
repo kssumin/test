@@ -57,4 +57,9 @@ Location: http://www.iana.org/domains/example/
 즉, CSS 요청에 대해서는 Content-Type : text/css여야 브라우저가 이를 css로 인식할 수 있다.
 
 ### heroku 서버에 배포 후
-* 
+
+
+### 리팩터링
+
+#### enum
+상수값이 서로 연관되어 있는 경우 자바의 enum을 쓰기에 적합하다.

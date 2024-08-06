@@ -13,9 +13,7 @@ import util.IOUtils;
 
 public class HttpRequest {
     private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
-
-    private String method;
-    private String path;
+    private HttpRequestLine requestLine;
 
     private Map<String, String> params = new HashMap<>();
     private Map<String, String> headers = new HashMap<>();
@@ -27,8 +25,7 @@ public class HttpRequest {
         if (line==null){
             return;
         }
-
-        parseRequestLine(line);
+        requestLine = new HttpRequestLine(line);
 
         line = reader.readLine();
         while(!line.equals("")){
@@ -37,31 +34,14 @@ public class HttpRequest {
             line = reader.readLine();
         }
 
-        if (method.equals("POST")){
-            setRequestBody(reader);
-        }
-    }
-
-    private void parseRequestLine(String line) {
-        log.debug("request line : {}", line);
-
-        String[] tokens = line.split(" ");
-        method = tokens[0];
-
-        String source = tokens[1];
-        if (method.equals("GET")){
-            int index = source.indexOf("?");
-
-            if (index == -1){
-                path = source;
-                return;
-            }
-
-            path = source.substring(0, index);
-            params = HttpRequestUtils.parseQueryString(source.substring(index+1));
+        if (getMethod().equals("POST")){
+            params.putAll(getRequestBody(reader));
             return;
         }
-        path = source;
+
+        if (requestLine.isHaveParams()){
+            params.putAll(requestLine.getParams());
+        }
     }
 
     private void setHeader(String line){
@@ -73,18 +53,18 @@ public class HttpRequest {
         headers.put(headerKey, headerValue);
     }
 
-    private void setRequestBody(BufferedReader reader) throws IOException {
+    private Map<String, String> getRequestBody(BufferedReader reader) throws IOException {
         int contentLength = Integer.parseInt(headers.get("Content-Length"));
         String requestBody = IOUtils.readData(reader, contentLength);
-        params.putAll(HttpRequestUtils.parseQueryString(requestBody));
+        return HttpRequestUtils.parseQueryString(requestBody);
     }
 
     public String getMethod() {
-        return method;
+        return requestLine.getMethod();
     }
 
     public String getPath() {
-        return path;
+        return requestLine.getPath();
     }
 
     public String getParameter(String name){
