@@ -20,7 +20,7 @@ public class HttpRequestLine {
         method = tokens[0];
 
         String source = tokens[1];
-        if (method.equals("GET")){
+        if (HttpMethod.isSame(method, HttpMethod.GET)){
             int index = source.indexOf("?");
 
             if (index == -1){

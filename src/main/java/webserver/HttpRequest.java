@@ -34,7 +34,7 @@ public class HttpRequest {
             line = reader.readLine();
         }
 
-        if (getMethod().equals("POST")){
+        if (HttpMethod.isSame(getMethod(), HttpMethod.POST)){
             params.putAll(getRequestBody(reader));
             return;
         }
