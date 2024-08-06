@@ -74,4 +74,14 @@ public class HttpRequest {
     public String getHeader(String name){
         return headers.get(name);
     }
+
+    public String getCookie(String key){
+        Map<String, String> cookies = getCookies();
+        return cookies.get(key);
+    }
+
+    private Map<String, String> getCookies(){
+        String cookie = headers.get("Cookie");
+        return HttpRequestUtils.parseCookies(cookie.split(":")[1].trim());
+    }
 }
