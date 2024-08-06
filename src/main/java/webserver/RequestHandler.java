@@ -31,34 +31,12 @@ public class RequestHandler extends Thread {
         log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
                 connection.getPort());
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            HttpRequest request = new HttpRequest(in);
             DataOutputStream dos = new DataOutputStream(out);
 
-            String line = reader.readLine();
-            int contentLength=0;
-            boolean isLogin = false;
+            boolean isLogin = isLogin(request);
+            String requestUrl = request.getPath();
 
-            if (line==null){
-                return;
-            }
-
-            log.debug("request line : {}", line);
-
-            String[] tokens = line.split(" ");
-            String requestUrl = tokens[1];
-
-            while(!line.equals("")){
-                line = reader.readLine();
-
-                if (line.startsWith("Content-Length")){
-                    contentLength = getContentLength(line);
-                }
-
-                if(line.startsWith("Cookie")){
-                    isLogin = isLogin(line);
-                }
-                log.debug("header : {}", line);
-            }
             if (requestUrl.endsWith(".css")){
                 byte[] body = Files.readAllBytes(new File("./webapp" + requestUrl).toPath());
                 new HttpResponseBuilder(dos)
@@ -69,9 +47,11 @@ public class RequestHandler extends Thread {
             }
 
             if (requestUrl.startsWith("/user/create")){
-                Map<String, String> body = getRequestBody(reader, contentLength);
-            User user = new User(body.get("userId"), body.get("password"), body.get("name"),
-                    body.get("email"));
+            User user = new User(
+                    request.getParameter("userId"),
+                    request.getParameter("password"),
+                    request.getParameter("name"),
+                    request.getParameter("email"));
             DataBase.addUser(user);
 
             log.debug("user : {}", user);
@@ -83,9 +63,10 @@ public class RequestHandler extends Thread {
             }
 
             if (requestUrl.startsWith("/user/login")){
-                Map<String, String> body = getRequestBody(reader, contentLength);
-
-                validateUser(body.get("userId"), body.get("password"), dos);
+                validateUser(
+                        request.getParameter("userId"),
+                        request.getParameter("password"),
+                        dos);
 
                 new HttpResponseBuilder(dos)
                         .status(302)
@@ -127,16 +108,6 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private int getContentLength(String line){
-        int index = line.indexOf(":");
-        return Integer.parseInt(line.substring(index + 1).trim());
-    }
-
-    private Map<String, String> getRequestBody(BufferedReader reader, int contentLength) throws IOException {
-        String requestBody = IOUtils.readData(reader, contentLength);
-        return HttpRequestUtils.parseQueryString(requestBody);
-    }
-
     private void responseResource(OutputStream out, String url) throws IOException {
         DataOutputStream dos = new DataOutputStream(out);
         byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
@@ -169,10 +140,8 @@ public class RequestHandler extends Thread {
        return answer.equals(compare);
     }
 
-    private boolean isLogin(String line){
-        Map<String, String> cookies = HttpRequestUtils.parseCookies(line.split(":")[1].trim());
-        String value = cookies.get("logined");
-
+    private boolean isLogin(HttpRequest httpRequest){
+        String value = httpRequest.getCookie("logined");
         return value != null;
     }
 }
